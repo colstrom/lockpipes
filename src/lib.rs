@@ -18,4 +18,8 @@ impl LockPipe {
       Err(error) => Err(error),
     }
   }
+
+  pub fn write(&self) -> io::Result<()> {
+    fs::write(&self.path, "")
+  }
 }
