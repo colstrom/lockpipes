@@ -6,6 +6,7 @@ use nix::Error as NixError;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
+use std::process;
 
 #[derive(Debug)]
 pub struct LockPipe {
@@ -95,6 +96,24 @@ impl Program {
         _ => {
           log::error!("failed checking if pipe exists at {:?}", &self.pipe.path);
           errno()
+        }
+      },
+    }
+  }
+
+  fn ensure_exists(&self) {
+    log::debug!("ensuring pipe exists at {:?}", &self.pipe.path);
+
+    match self.pipe.exists() {
+      Ok(_) => log::info!("pipe exists at {:?}", &self.pipe.path),
+      Err(error) => match error.kind() {
+        io::ErrorKind::NotFound => {
+          log::warn!("pipe does not exist at {:?}", &self.pipe.path);
+          self.create();
+        }
+        _ => {
+          log::error!("failed checking if pipe exists at {:?}", &self.pipe.path);
+          process::exit(errno());
         }
       },
     }
