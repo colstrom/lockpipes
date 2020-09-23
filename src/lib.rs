@@ -118,4 +118,25 @@ impl Program {
       },
     }
   }
+
+  pub fn read(&self) -> i32 {
+    self.ensure_exists();
+
+    log::debug!("reading from pipe at {:?}", &self.pipe.path);
+
+    match self.pipe.read() {
+      Ok(_) => {
+        log::info!("read from pipe at {:?}", &self.pipe.path);
+        0
+      }
+      Err(error) => {
+        log::error!(
+          "failed reading from pipe at {:?}: {:?}",
+          &self.pipe.path,
+          error
+        );
+        errno()
+      }
+    }
+  }
 }
