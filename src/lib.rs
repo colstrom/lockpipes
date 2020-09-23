@@ -40,3 +40,14 @@ impl LockPipe {
     fs::remove_file(&self.path)
   }
 }
+
+#[derive(Debug)]
+pub struct Program {
+  pipe: LockPipe,
+}
+
+impl Program {
+  pub fn new(pipe: LockPipe) -> Self {
+    Self { pipe }
+  }
+}
