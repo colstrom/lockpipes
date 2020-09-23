@@ -1,5 +1,8 @@
+use nix::errno::errno;
+use nix::errno::Errno;
 use nix::sys::stat;
 use nix::unistd;
+use nix::Error as NixError;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -49,5 +52,30 @@ pub struct Program {
 impl Program {
   pub fn new(pipe: LockPipe) -> Self {
     Self { pipe }
+  }
+
+  pub fn create(&self) -> i32 {
+    log::debug!("creating pipe at {:?}", &self.pipe.path);
+
+    match self.pipe.create() {
+      Ok(_) => {
+        log::info!("created pipe at {:?}", &self.pipe.path);
+        0
+      }
+      Err(error) => match error {
+        NixError::Sys(Errno::EEXIST) => {
+          log::warn!("pipe already exists at {:?}", &self.pipe.path);
+          0
+        }
+        _ => {
+          log::error!(
+            "failed to create pipe at {:?}: {:?}",
+            &self.pipe.path,
+            error
+          );
+          errno()
+        }
+      },
+    }
   }
 }
