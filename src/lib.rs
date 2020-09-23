@@ -1,3 +1,9 @@
+pub mod command;
+pub mod logging;
+
+pub use command::Command;
+pub use nix;
+
 use nix::errno::errno;
 use nix::errno::Errno;
 use nix::sys::stat;
@@ -13,10 +19,17 @@ pub struct LockPipe {
   path: PathBuf,
 }
 
+/// The low-level interface for lockpipes, providing the core functionality,
+/// with minimal error handling.
+
 impl LockPipe {
   pub fn new<P: Into<PathBuf>>(path: P) -> Self {
     Self { path: path.into() }
   }
+
+  /// consumes and discards the data in the pipe. It blocks if there are no
+  /// writers. Multiple LockPipe instances may read from the same pipe, all will
+  /// be unblocked when anything writes to it.
 
   pub fn read(&self) -> io::Result<()> {
     match fs::read(&self.path) {
@@ -25,9 +38,17 @@ impl LockPipe {
     }
   }
 
+  /// writes an empty string to the pipe. It blocks if there are no readers.
+  /// Multiple LockPipe instances may write to the same pipe, all will be
+  /// unblocked when anything reads from it.
+
   pub fn write(&self) -> io::Result<()> {
     fs::write(&self.path, "")
   }
+
+  /// checks if the pipe exists, sort of. It checks that *something* exists at
+  /// that path, not that it's specifically a pipe. It probably should. Patches
+  /// to improve this are welcome.
 
   pub fn exists(&self) -> io::Result<()> {
     match fs::metadata(&self.path) {
@@ -36,9 +57,14 @@ impl LockPipe {
     }
   }
 
+  /// creates a named pipe at the given path.
+
   pub fn create(&self) -> nix::Result<()> {
     unistd::mkfifo(&self.path, stat::Mode::S_IRWXU)
   }
+
+  /// deletes whatever is at the given path. It makes no attempt to verify that
+  /// the thing being deleted is actually a pipe.
 
   pub fn delete(&self) -> io::Result<()> {
     fs::remove_file(&self.path)
@@ -50,10 +76,17 @@ pub struct Program {
   pipe: LockPipe,
 }
 
+/// The high-level interface for lockpipes, wrapping a LockPipe and providing
+/// error handling and logging.
+
 impl Program {
   pub fn new(pipe: LockPipe) -> Self {
     Self { pipe }
   }
+
+  /// attempts to create the pipe. If something already exists there, it is
+  /// assumed to be the right thing, and not effort is made to confirm that it
+  /// actually is a pipe.
 
   pub fn create(&self) -> i32 {
     log::debug!("creating pipe at {:?}", &self.pipe.path);
@@ -80,6 +113,8 @@ impl Program {
     }
   }
 
+  /// checks if the pipe exists.
+
   pub fn exists(&self) -> i32 {
     log::debug!("checking if pipe exists at {:?}", &self.pipe.path);
 
@@ -101,6 +136,9 @@ impl Program {
     }
   }
 
+  /// internal function that checks if the pipe exists, creates it if not, and
+  /// exits the program if it can't do that.
+
   fn ensure_exists(&self) {
     log::debug!("ensuring pipe exists at {:?}", &self.pipe.path);
 
@@ -118,6 +156,8 @@ impl Program {
       },
     }
   }
+
+  /// reads from the pipe, returning errno if that for any reason.
 
   pub fn read(&self) -> i32 {
     self.ensure_exists();
@@ -140,6 +180,8 @@ impl Program {
     }
   }
 
+  /// writes to the pipe, returning errno if that fails for any reason.
+
   pub fn write(&self) -> i32 {
     self.ensure_exists();
 
@@ -160,6 +202,10 @@ impl Program {
       }
     }
   }
+
+  /// attempts to delete the pipe. If it doesn't exist, it considers this to be
+  /// a success, since you asked it to make the path not exist. If it fails for
+  /// any other reason, it returns errno.
 
   pub fn delete(&self) -> i32 {
     match self.pipe.delete() {
