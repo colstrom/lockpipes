@@ -78,4 +78,25 @@ impl Program {
       },
     }
   }
+
+  pub fn exists(&self) -> i32 {
+    log::debug!("checking if pipe exists at {:?}", &self.pipe.path);
+
+    match self.pipe.exists() {
+      Ok(_) => {
+        log::info!("pipe exists at {:?}", &self.pipe.path);
+        0
+      }
+      Err(error) => match error.kind() {
+        io::ErrorKind::NotFound => {
+          log::info!("pipe does not exist at {:?}", &self.pipe.path);
+          1
+        }
+        _ => {
+          log::error!("failed checking if pipe exists at {:?}", &self.pipe.path);
+          errno()
+        }
+      },
+    }
+  }
 }
