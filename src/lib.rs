@@ -160,4 +160,28 @@ impl Program {
       }
     }
   }
+
+  pub fn delete(&self) -> i32 {
+    match self.pipe.delete() {
+      Ok(_) => {
+        log::info!("deleted pipe at {:?}", &self.pipe.path);
+        0
+      }
+
+      Err(error) => match error.kind() {
+        io::ErrorKind::NotFound => {
+          log::warn!("pipe does not exist at {:?}", &self.pipe.path);
+          0
+        }
+        _ => {
+          log::error!(
+            "failed to delete pipe at {:?}: {:?}",
+            &self.pipe.path,
+            error
+          );
+          errno()
+        }
+      },
+    }
+  }
 }
