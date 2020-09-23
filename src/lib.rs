@@ -139,4 +139,25 @@ impl Program {
       }
     }
   }
+
+  pub fn write(&self) -> i32 {
+    self.ensure_exists();
+
+    log::debug!("writing to pipe at {:?}", &self.pipe.path);
+
+    match self.pipe.write() {
+      Ok(_) => {
+        log::info!("wrote to pipe at {:?}", &self.pipe.path);
+        0
+      }
+      Err(error) => {
+        log::error!(
+          "failed writing to pipe at {:?}: {:?}",
+          &self.pipe.path,
+          error
+        );
+        errno()
+      }
+    }
+  }
 }
