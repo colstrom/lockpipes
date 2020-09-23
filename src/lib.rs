@@ -1,3 +1,5 @@
+use nix::sys::stat;
+use nix::unistd;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -28,5 +30,9 @@ impl LockPipe {
       Ok(_) => Ok(()),
       Err(error) => Err(error),
     }
+  }
+
+  pub fn create(&self) -> nix::Result<()> {
+    unistd::mkfifo(&self.path, stat::Mode::S_IRWXU)
   }
 }
