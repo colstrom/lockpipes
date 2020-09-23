@@ -22,4 +22,11 @@ impl LockPipe {
   pub fn write(&self) -> io::Result<()> {
     fs::write(&self.path, "")
   }
+
+  pub fn exists(&self) -> io::Result<()> {
+    match fs::metadata(&self.path) {
+      Ok(_) => Ok(()),
+      Err(error) => Err(error),
+    }
+  }
 }
