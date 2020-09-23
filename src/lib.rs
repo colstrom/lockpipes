@@ -35,4 +35,8 @@ impl LockPipe {
   pub fn create(&self) -> nix::Result<()> {
     unistd::mkfifo(&self.path, stat::Mode::S_IRWXU)
   }
+
+  pub fn delete(&self) -> io::Result<()> {
+    fs::remove_file(&self.path)
+  }
 }
