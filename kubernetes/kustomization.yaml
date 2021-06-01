@@ -1,0 +1,18 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: lockpipes
+commonLabels:
+  app.kubernetes.io/name: lockpipe
+  app.kubernetes.io/version: "1.0.0"
+images:
+  - name: docker.io/alpine
+    newName: docker.io/alpine
+    newTag: "3.12.0"
+  - name: docker.io/colstrom/lockpipe
+    newName: docker.io/colstrom/lockpipe
+    newTag: "1.0.0"
+resources:
+  - Namespace.yaml
+  - ConfigMap.yaml
+  - DaemonSet.yaml

@@ -1,0 +1,40 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: oneshot
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oneshot
+  template:
+    metadata:
+      name: oneshot
+      labels:
+        app.kubernetes.io/name: oneshot
+    spec:
+      initContainers:
+        - name: oneshot
+          image: docker.io/alpine
+          securityContext:
+            privileged: true
+          command:
+            - "true"
+          envFrom:
+            - configMapRef:
+                name: config
+      containers:
+        - name: persist
+          image: docker.io/colstrom/lockpipe
+          command:
+            - lockpipe
+            - read
+          envFrom:
+            - configMapRef:
+                name: config
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - lockpipe
+                  - write
